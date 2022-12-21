@@ -34,7 +34,7 @@ jobs:
       - name: Push Image to DockerHub
         run: docker push ${{env.REPO}}:v${{steps.versioning.outputs.version}}
 
-      - name: Show Versions
+      - name: Show Latest Version
         run: echo "${{ steps.versioning.outputs.version }}" "${{ steps.versioning.outputs.steps.versioning.outputs.version }}"
         
       - name: Release Latest Build
