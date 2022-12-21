@@ -25,9 +25,6 @@ jobs:
           create-summary: "true"
           skip-commit: "true"
 
-      - name: Show Changelog Output
-        run: echo "${{steps.versioning.outputs.clean_changelog}}"
-
       - name: Login to DockerHub
         run: docker login -u ${{env.DOCKER_USER}} -p ${{secrets.DOCKER_PASS}}
 
@@ -36,6 +33,9 @@ jobs:
 
       - name: Push Image to DockerHub
         run: docker push ${{env.REPO}}:v${{steps.versioning.outputs.version}}
+
+      - name: Show Versions
+        run: echo "${{ steps.versioning.outputs.version }}" "${{ steps.versioning.outputs.steps.versioning.outputs.version }}"
         
       - name: Release Latest Build
         run: gh release create ${{ steps.versioning.outputs.tag }} -n "${{ steps.versioning.outputs.clean_changelog }}"
