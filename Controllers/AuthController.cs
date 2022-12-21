@@ -25,4 +25,9 @@ public class AuthController : ControllerBase {
         var res = await _authService.Signin(signinReq);
         return res.StatusCode == 200 ? Ok(res) : Unauthorized(new ApiException(401, $"{res.Message}"));
     }
+
+    [HttpPost("reset")]
+    public IActionResult ResetPassword() {
+        return Ok();
+    }
 }
