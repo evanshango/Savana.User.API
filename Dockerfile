@@ -5,7 +5,7 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
-COPY ["Savana.User.API/Savana.User.API.csproj", "Savana.User.API/"]
+COPY ["Savana.User.API.csproj", "Savana.User.API/"]
 RUN dotnet restore "Savana.User.API/Savana.User.API.csproj"
 WORKDIR "/src/Savana.User.API"
 COPY . .
