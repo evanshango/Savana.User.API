@@ -1,0 +1,13 @@
+.idea
+.idea/*
+.vscode
+appsettings.json
+obj
+bin
+*.db*
+*.rdb
+*.overide*
+.git
+*ocelot.prod.json
+docker-compose-prod.yml
+.DS_Store
