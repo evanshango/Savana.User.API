@@ -29,20 +29,20 @@ public class GroupController : ControllerBase {
         var createdBy = User.RetrieveEmailFromPrincipal();
         var response = await _groupService.AddGroup(groupReq, createdBy);
         return response != null
-            ? CreatedAtRoute("GetGroup", new { groupId = response.Id }, response)
+            ? CreatedAtRoute("GetGroup", new { slug = response.Slug }, response)
             : BadRequest(new ErrorResponse(400, "Unable to Create Group"));
     }
 
-    [HttpGet("{groupId}", Name = "GetGroup")]
-    public async Task<ActionResult<GroupDto>> GetGroup([FromRoute] string groupId) {
-        var res = await _groupService.GetGroupById(groupId);
-        return res != null ? Ok(res) : NotFound(new ApiException(404, $"Group with id '{groupId}' not found"));
+    [HttpGet("{slug}", Name = "GetGroup")]
+    public async Task<ActionResult<GroupDto>> GetGroup([FromRoute] string slug) {
+        var res = await _groupService.GetGroupBySlug(slug);
+        return res != null ? Ok(res) : NotFound(new ApiException(404, $"Group with slug '{slug}' not found"));
     }
 
-    [HttpPut("{groupId}")]
-    public async Task<ActionResult<GroupDto>> UpdateGroup([FromRoute] string groupId, [FromBody] GroupReq groupReq) {
+    [HttpPut("{slug}")]
+    public async Task<ActionResult<GroupDto>> UpdateGroup([FromRoute] string slug, [FromBody] GroupReq groupReq) {
         var updatedBy = User.RetrieveEmailFromPrincipal();
-        var res = await _groupService.UpdateGroup(groupId, groupReq, updatedBy);
-        return res != null ? Ok(res) : NotFound(new ApiException(404, "Group not found"));
+        var res = await _groupService.UpdateGroup(slug, groupReq, updatedBy);
+        return res != null ? Ok(res) : NotFound(new ApiException(404, $"Group with slug '{slug}' not found"));
     }
 }

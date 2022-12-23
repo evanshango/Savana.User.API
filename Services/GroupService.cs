@@ -29,8 +29,8 @@ public class GroupService : IGroupService {
         return result < 1 ? null : res.MapGroupToDto("single");
     }
 
-    public async Task<GroupDto?> GetGroupById(string groupId) {
-        var groupSpec = new GroupSpecification(groupId: groupId, active: null);
+    public async Task<GroupDto?> GetGroupBySlug(string slug) {
+        var groupSpec = new GroupSpecification(slug: slug, active: null);
         var existing = await _unitOfWork.Repository<GroupEntity>().GetEntityWithSpec(groupSpec);
         return existing?.MapGroupToDto("single");
     }
@@ -40,10 +40,12 @@ public class GroupService : IGroupService {
         return await _unitOfWork.Repository<GroupEntity>().GetPagedAsync(groupSpec, gParams.Page, gParams.PageSize);
     }
 
-    public async Task<GroupDto?> UpdateGroup(string groupId, GroupReq groupReq, string updatedBy) {
-        var group = await FindGroup(groupId);
+    public async Task<GroupDto?> UpdateGroup(string slug, GroupReq groupReq, string updatedBy) {
+        var group = await FindGroup(slug);
 
         if (group == null) return null;
+        var existingName = await FindGroupByName(groupReq.Name);
+        if (existingName != null) return existingName.MapGroupToDto("single");
 
         if (groupReq.RoleIds?.Count > 0) {
             var gRoles = new List<GroupRole>();
@@ -70,13 +72,13 @@ public class GroupService : IGroupService {
         return result < 1 ? null : res.MapGroupToDto("single");
     }
 
-    public async Task<GroupEntity?> FindGroupByName(string groupName) {
+    public async Task<GroupEntity?> FindGroupByName(string? groupName) {
         var groupNameSpec = new GroupSpecification(groupName: groupName);
         return await _unitOfWork.Repository<GroupEntity>().GetEntityWithSpec(groupNameSpec);
     }
 
-    private async Task<GroupEntity?> FindGroup(string groupId) {
-        var groupSpec = new GroupSpecification(groupId: groupId, active: null);
+    private async Task<GroupEntity?> FindGroup(string slug) {
+        var groupSpec = new GroupSpecification(slug: slug, active: null);
         return await _unitOfWork.Repository<GroupEntity>().GetEntityWithSpec(groupSpec);
     }
 }
