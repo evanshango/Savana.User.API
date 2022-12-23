@@ -5,8 +5,8 @@ using Treasures.Common.Services;
 namespace Savana.User.API.Specifications;
 
 public class GroupSpecification : SpecificationService<GroupEntity> {
-    public GroupSpecification(string? groupId, bool? active) : base(g =>
-        (string.IsNullOrEmpty(groupId) || g.Id.Equals(groupId)) &&
+    public GroupSpecification(string? slug, bool? active) : base(g =>
+        (string.IsNullOrEmpty(slug) || g.Slug!.Equals(slug)) &&
         (active != null ? g.Active == active : g.Active == true)
     ) {
         AddInclude(g => g.UserGroups);
@@ -14,8 +14,8 @@ public class GroupSpecification : SpecificationService<GroupEntity> {
         AddInclude($"{nameof(GroupEntity.RoleGroups)}.{nameof(GroupRole.Role)}");
     }
 
-    public GroupSpecification(string groupName) : base(
-        g => g.Name.ToLower().Equals(groupName.ToLower())
+    public GroupSpecification(string? groupName) : base(g =>
+        string.IsNullOrEmpty(groupName) || g.Name.ToLower().Equals(groupName.ToLower())
     ) => AddInclude(g => g.UserGroups);
 
     public GroupSpecification(GroupParams groupParams) : base(g =>
