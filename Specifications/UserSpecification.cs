@@ -6,10 +6,8 @@ namespace Savana.User.API.Specifications;
 
 public class UserSpecification : SpecificationService<UserEntity> {
     public UserSpecification(UserParams userParams) : base(x =>
-        (string.IsNullOrEmpty(userParams.SearchTerm)
-         || x.FirstName!.ToLower().Equals(userParams.SearchTerm.Trim().ToLower())
-         || x.LastName!.ToLower().Equals(userParams.SearchTerm.Trim().ToLower())) &&
-        (userParams.Enabled != null ? x.Enabled == userParams.Enabled : x.Enabled == true)
+        (string.IsNullOrEmpty(userParams.Name) || x.FirstName!.ToLower().Equals(userParams.Name.Trim().ToLower()) || 
+         x.LastName!.ToLower().Equals(userParams.Name.Trim().ToLower())) && x.Enabled == userParams.Enabled
     ) {
         if (string.IsNullOrEmpty(userParams.OrderBy)) return;
         switch (userParams.OrderBy) {

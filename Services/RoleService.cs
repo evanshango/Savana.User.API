@@ -12,8 +12,12 @@ namespace Savana.User.API.Services;
 
 public class RoleService : IRoleService {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<RoleService> _logger;
 
-    public RoleService(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+    public RoleService(IUnitOfWork unitOfWork, ILogger<RoleService> logger) {
+        _unitOfWork = unitOfWork;
+        _logger = logger;
+    }
 
     public async Task<PagedList<RoleEntity>> GetRoles(RoleParams rParams) {
         var roleSpec = new RoleSpecification(rParams);
@@ -28,18 +32,26 @@ public class RoleService : IRoleService {
     public async Task<RoleDto?> AddRole(RoleReq roleReq) {
         var roleSpec = new RoleSpecification(roleReq.Name);
         var existing = await _unitOfWork.Repository<RoleEntity>().GetEntityWithSpec(roleSpec);
-        if (existing != null) return existing.MapRoleToDto();
+        if (existing != null) {
+            _logger.LogWarning("Role with name {Name} already exists", existing.Name);
+            return existing.MapRoleToDto();
+        }
 
         var newRole = new RoleEntity(Guid.NewGuid().ToString(), roleReq.Name!, roleReq.Description!);
 
         var res = _unitOfWork.Repository<RoleEntity>().AddAsync(newRole);
         var result = await _unitOfWork.Complete();
-        return result < 1 ? null : res.MapRoleToDto();
+        if (result >= 1) return res.MapRoleToDto();
+        _logger.LogError("Error while creating Role with name {Name}", roleReq.Name);
+        return null;
     }
 
     public async Task<RoleDto?> UpdateRole(string roleId, RoleReq roleReq) {
         var existing = await _unitOfWork.Repository<RoleEntity>().GetByIdAsync(roleId);
-        if (existing == null) return null;
+        if (existing == null) {
+            _logger.LogWarning("Role with id {Id} not found", roleId);
+            return null;
+        }
 
         existing.Name = roleReq.Name ?? existing.Name;
         existing.Description = roleReq.Description ?? existing.Description;
@@ -48,6 +60,8 @@ public class RoleService : IRoleService {
 
         var res = _unitOfWork.Repository<RoleEntity>().UpdateAsync(existing);
         var result = await _unitOfWork.Complete();
-        return result < 1 ? null : res.MapRoleToDto();
+        if (result >= 1) return res.MapRoleToDto();
+        _logger.LogError("Error while updating Role with name {Name}", roleReq.Name);
+        return null;
     }
 }

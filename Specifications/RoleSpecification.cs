@@ -6,7 +6,7 @@ namespace Savana.User.API.Specifications;
 
 public class RoleSpecification : SpecificationService<RoleEntity> {
     public RoleSpecification(RoleParams roleParams) : base(r =>
-        string.IsNullOrEmpty(roleParams.SearchTerm) || r.Name.ToLower().Equals(roleParams.SearchTerm.Trim().ToLower())
+        string.IsNullOrEmpty(roleParams.Name) || r.Name.ToLower().Equals(roleParams.Name.Trim().ToLower())
     ) { }
 
     public RoleSpecification(string? roleName) : base(r =>
