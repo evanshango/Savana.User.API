@@ -19,7 +19,7 @@ public class GroupSpecification : SpecificationService<GroupEntity> {
     ) => AddInclude(g => g.UserGroups);
 
     public GroupSpecification(GroupParams groupParams) : base(g =>
-        string.IsNullOrEmpty(groupParams.SearchTerm) || g.Name.ToLower().Equals(groupParams.SearchTerm)
+        string.IsNullOrEmpty(groupParams.Name) || g.Name.ToLower().Equals(groupParams.Name)
     ) {
         AddInclude(g => g.UserGroups);
         if (string.IsNullOrEmpty(groupParams.OrderBy)) return;

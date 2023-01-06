@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using log4net;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -21,11 +22,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers().AddJsonOptions(opt => {
     opt.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
 }).ConfigureApiBehaviorOptions(x => { x.SuppressMapClientErrors = true; });
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddDbContext<StoreContext>(opt => {
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")!);
+    opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")!,
+        c => c.UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery));
 });
 builder.Services
     .AddIdentity<UserEntity, RoleEntity>(opt => { opt.User.RequireUniqueEmail = true; })
@@ -45,13 +46,21 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IGroupService, GroupService>();
 builder.Services.AddScoped<ITokenService>(_ => {
     var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Token:Key"]));
-    return new TokenService(key, builder.Configuration["Token:Issuer"], builder.Configuration["Token:ExpiresIn"]);
+    return new TokenService(
+        key, builder.Configuration["Token:Issuer"], builder.Configuration["Token:ExpiresIn"]
+    );
 });
 
 builder.Services.AddRouting(opt => {
     opt.LowercaseUrls = true;
     opt.LowercaseQueryStrings = true;
 });
+
+builder.Services.AddLogging(c => c.ClearProviders());
+builder.Logging.AddLog4Net();
+
+GlobalContext.Properties["pid"] = Environment.ProcessId;
+GlobalContext.Properties["appName"] = builder.Configuration["Properties:Name"];
 
 var app = builder.Build();
 
@@ -63,8 +72,7 @@ await using (var scope = app.Services.CreateAsyncScope()) {
         var userManager = services.GetRequiredService<UserManager<UserEntity>>();
         await context.Database.MigrateAsync();
         await SeedDb.SeedData(context, userManager, builder.Configuration["SeedInfo:AdminPass"]);
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
         var logger = loggerFactory.CreateLogger<Program>();
         logger.LogError(e, "An error occurred during migration");
     }
@@ -73,6 +81,7 @@ await using (var scope = app.Services.CreateAsyncScope()) {
 app.UseForwardedHeaders(new ForwardedHeadersOptions
     { ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto }
 );
+
 app.UseMiddleware<ExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment()) app.UseSavanaSwaggerDoc("Savana User API Service v1");
@@ -82,4 +91,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+var address = Environment.GetEnvironmentVariable("ASPNETCORE_URLS")!.Split(";").First();
+app.Logger.LogInformation("Savana User.API started on {Addr}", address);
 app.Run();

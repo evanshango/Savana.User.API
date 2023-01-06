@@ -12,21 +12,30 @@ namespace Savana.User.API.Services;
 
 public class GroupService : IGroupService {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<GroupService> _logger;
 
-    public GroupService(IUnitOfWork unitOfWork) => _unitOfWork = unitOfWork;
+    public GroupService(IUnitOfWork unitOfWork, ILogger<GroupService> logger) {
+        _unitOfWork = unitOfWork;
+        _logger = logger;
+    }
 
     public async Task<GroupDto?> AddGroup(GroupReq groupReq, string createdBy) {
         var groupByNameSpec = new GroupSpecification(groupName: groupReq.Name!);
         var existing = await _unitOfWork.Repository<GroupEntity>().GetEntityWithSpec(groupByNameSpec);
 
-        if (existing != null) return existing.MapGroupToDto("single");
+        if (existing != null) {
+            _logger.LogWarning("Group with name {Name} already exists", existing.Name);
+            return existing.MapGroupToDto("single");
+        }
 
         var newGroup = new GroupEntity(Guid.NewGuid().ToString(), groupReq.Name!, groupReq.Description!, createdBy);
         newGroup.Slug = newGroup.GetSlug();
 
         var res = _unitOfWork.Repository<GroupEntity>().AddAsync(newGroup);
         var result = await _unitOfWork.Complete();
-        return result < 1 ? null : res.MapGroupToDto("single");
+        if (result >= 1) return res.MapGroupToDto("single");
+        _logger.LogError("Error while creating Group with name {Name}", groupReq.Name);
+        return null;
     }
 
     public async Task<GroupDto?> GetGroupBySlug(string slug) {
@@ -43,9 +52,15 @@ public class GroupService : IGroupService {
     public async Task<GroupDto?> UpdateGroup(string slug, GroupReq groupReq, string updatedBy) {
         var group = await FindGroup(slug);
 
-        if (group == null) return null;
+        if (group == null) {
+            _logger.LogWarning("Group with slug {Slug} not found", slug);
+            return null;
+        }
         var existingName = await FindGroupByName(groupReq.Name);
-        if (existingName != null) return existingName.MapGroupToDto("single");
+        if (existingName != null) {
+            _logger.LogWarning("Group with name {Name} already exists", existingName.Name);
+            return existingName.MapGroupToDto("single");
+        }
 
         if (groupReq.RoleIds?.Count > 0) {
             var gRoles = new List<GroupRole>();
@@ -69,7 +84,9 @@ public class GroupService : IGroupService {
 
         var res = _unitOfWork.Repository<GroupEntity>().UpdateAsync(group);
         var result = await _unitOfWork.Complete();
-        return result < 1 ? null : res.MapGroupToDto("single");
+        if (result >= 1) return res.MapGroupToDto("single");
+        _logger.LogError("Error while updating Group with name {Name}", group.Name);
+        return null;
     }
 
     public async Task<GroupEntity?> FindGroupByName(string? groupName) {
